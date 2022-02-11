@@ -28,6 +28,39 @@ if command -v bw > /dev/null; then
     fi
     fpath+=( ${bw_comp_script:h} )
     unset bw_comp_script
+
+
+    if command -v jq > /dev/null; then
+        function bw-unlock() {
+            local bw_status="$(print $(bw status | jq '.status'))"
+            if [[ "${(Q)bw_status}" == 'locked' ]]; then
+                print "Bitwarden is locked"
+                 if BW_SESSION=$(bw unlock --raw); then
+                     export BW_SESSION="$BW_SESSION"
+                 else
+                     return 1
+                 fi
+            else
+                print "Bitwarden is unlocked"
+            fi
+            unset bw_status
+        }
+
+        function fzf-bw-items() {
+            bw-unlock
+
+            bwitems=$(bw list items | jq -c '.[] | .["name"] + "," + .["id"] | split(",")' )
+            typeset -A bwitems_arr=(${(f)bwitems})
+
+            echo $bwitems | sed 's/[][]//g' |
+                fzf --preview-window=:nohidden \
+                --preview 'echo {} | sed "s/^.*,//" | xargs bw get item|jq' \
+                -d ',' --with-nth 1 | \
+                sed 's/^.*,//'
+
+        }
+    fi
+
 fi
 
 autoload -Uz template-script
