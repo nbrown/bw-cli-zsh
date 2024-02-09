@@ -19,6 +19,10 @@ typeset -gA Plugins
 Plugins[BW_CLI_ZSH_DIR]="${0:h}"
 
 if command -v bw > /dev/null; then
+    # Temp workaround to disable punycode deprecation logging to stderr
+    # https://github.com/bitwarden/clients/issues/6689
+    alias bw='NODE_OPTIONS="--no-deprecation" bw'
+
     local bw_comp_script="${0:h}/completions/_bw"
     if [[ ! -f "$bw_comp_script" ]]; then
         if [[ ! -d "${bw_comp_script:h}" ]]; then
